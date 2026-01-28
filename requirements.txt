@@ -17,6 +17,9 @@ psycopg2-binary==2.9.9  # PostgreSQL (Render 배포용)
 # Environment
 python-dotenv==1.0.1
 
+# Session (starlette SessionMiddleware 의존성)
+itsdangerous==2.1.2
+
 # Google Gemini
 google-generativeai==0.8.3
 
