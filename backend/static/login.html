@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudRAG - 로그인</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: #667eea;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .logo p {
+            color: #888;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #eee;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            color: #888;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .form-container {
+            display: none;
+        }
+        .form-container.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .features {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .features h3 {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .feature-icons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .feature-icon {
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+        .feature-icon img {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+        .check-result {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .check-result.available {
+            color: #28a745;
+        }
+        .check-result.taken {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>CloudRAG</h1>
+            <p>Gemini LLM 기반 문서 검색 챗봇</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="login">로그인</div>
+            <div class="tab" data-tab="signup">회원가입</div>
+        </div>
+
+        <div id="message"></div>
+
+        <!-- 로그인 폼 -->
+        <div class="form-container active" id="login-form">
+            <form action="/auth/login" method="POST">
+                <div class="form-group">
+                    <label>아이디</label>
+                    <input type="text" name="user_name" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호</label>
+                    <input type="password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn">로그인</button>
+            </form>
+        </div>
+
+        <!-- 회원가입 폼 -->
+        <div class="form-container" id="signup-form">
+            <form action="/auth/signup" method="POST">
+                <div class="form-group">
+                    <label>아이디 (4자 이상)</label>
+                    <input type="text" name="user_name" id="signup-username" required minlength="4" maxlength="20">
+                    <div class="check-result" id="username-check"></div>
+                </div>
+                <div class="form-group">
+                    <label>이메일 (선택)</label>
+                    <input type="email" name="email" id="signup-email">
+                    <div class="check-result" id="email-check"></div>
+                </div>
+                <div class="form-group">
+                    <label>표시 이름 (선택)</label>
+                    <input type="text" name="display_name">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호 (6자 이상)</label>
+                    <input type="password" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>비밀번호 확인</label>
+                    <input type="password" name="confirm_password" required minlength="6">
+                </div>
+                <button type="submit" class="btn">가입하기</button>
+            </form>
+        </div>
+
+        <div class="features">
+            <h3>연동 가능한 서비스</h3>
+            <div class="feature-icons">
+                <div class="feature-icon">
+                    <div style="font-size:24px;">📁</div>
+                    <div>Google Drive</div>
+                </div>
+                <div class="feature-icon">
+                    <div style="font-size:24px;">☁️</div>
+                    <div>OneDrive</div>
+                </div>
+                <div class="feature-icon">
+                    <div style="font-size:24px;">📝</div>
+                    <div>Notion</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 탭 전환
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-form').classList.add('active');
+            });
+        });
+
+        // URL 파라미터로 메시지 표시
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('signup') === 'ok') {
+            showMessage('회원가입이 완료되었습니다. 로그인해주세요.', 'success');
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.className = 'message ' + type;
+            msg.textContent = text;
+        }
+
+        // 아이디 중복 체크
+        let usernameTimeout;
+        document.getElementById('signup-username').addEventListener('input', (e) => {
+            clearTimeout(usernameTimeout);
+            const val = e.target.value.trim();
+            const check = document.getElementById('username-check');
+
+            if (val.length < 4) {
+                check.textContent = '4자 이상 입력하세요';
+                check.className = 'check-result';
+                return;
+            }
+
+            usernameTimeout = setTimeout(async () => {
+                const res = await fetch(`/auth/check-id?user_name=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                if (data.available) {
+                    check.textContent = '사용 가능한 아이디입니다';
+                    check.className = 'check-result available';
+                } else {
+                    check.textContent = '이미 사용 중인 아이디입니다';
+                    check.className = 'check-result taken';
+                }
+            }, 500);
+        });
+
+        // 이메일 중복 체크
+        let emailTimeout;
+        document.getElementById('signup-email').addEventListener('input', (e) => {
+            clearTimeout(emailTimeout);
+            const val = e.target.value.trim();
+            const check = document.getElementById('email-check');
+
+            if (!val) {
+                check.textContent = '';
+                return;
+            }
+
+            emailTimeout = setTimeout(async () => {
+                const res = await fetch(`/auth/check-email?email=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                if (data.available) {
+                    check.textContent = '사용 가능한 이메일입니다';
+                    check.className = 'check-result available';
+                } else {
+                    check.textContent = '이미 사용 중인 이메일입니다';
+                    check.className = 'check-result taken';
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

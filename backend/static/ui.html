@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudRAG - 문서 검색 챗봇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* 메인 컨테이너 */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 64px);
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        .sidebar-title {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .connection-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            transition: background 0.2s;
+        }
+        .connection-item:hover {
+            background: #f0f0f0;
+        }
+        .connection-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .connection-icon {
+            font-size: 20px;
+        }
+        .connection-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .connection-email {
+            font-size: 11px;
+            color: #888;
+        }
+        .connection-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-disconnected {
+            background: #f8f9fa;
+            color: #888;
+        }
+        .connect-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .connect-btn:hover {
+            background: #5a6fd6;
+        }
+
+        /* 채팅 영역 */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        .chat-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+        .chat-header p {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .message.user .message-avatar {
+            background: #764ba2;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message-sources {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #666;
+        }
+        .message.user .message-sources {
+            color: rgba(255,255,255,0.8);
+            border-top-color: rgba(255,255,255,0.2);
+        }
+
+        /* 입력 영역 */
+        .chat-input-container {
+            padding: 16px 24px;
+            border-top: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        .provider-select {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .provider-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .provider-btn:hover {
+            border-color: #667eea;
+        }
+        .provider-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .provider-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: flex;
+            gap: 4px;
+            padding: 8px;
+        }
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* 빠른 링크 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal h3 {
+            margin-bottom: 16px;
+        }
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .modal-btn.primary {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+        .modal-btn.secondary {
+            background: white;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>CloudRAG</h1>
+        <div class="header-right">
+            <span class="user-info" id="user-info">로딩 중...</span>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">클라우드 연동</div>
+                <div id="connections-list">
+                    <div class="connection-item">
+                        <div class="connection-info">
+                            <span class="connection-icon">📁</span>
+                            <div>
+                                <div class="connection-name">Google Drive</div>
+                                <div class="connection-email" id="google-email"></div>
+                            </div>
+                        </div>
+                        <span id="google-status" class="connection-status status-disconnected">미연결</span>
+                    </div>
+                    <div class="connection-item">
+                        <div class="connection-info">
+                            <span class="connection-icon">☁️</span>
+                            <div>
+                                <div class="connection-name">OneDrive</div>
+                                <div class="connection-email" id="onedrive-email"></div>
+                            </div>
+                        </div>
+                        <span id="onedrive-status" class="connection-status status-disconnected">미연결</span>
+                    </div>
+                    <div class="connection-item">
+                        <div class="connection-info">
+                            <span class="connection-icon">📝</span>
+                            <div>
+                                <div class="connection-name">Notion</div>
+                                <div class="connection-email" id="notion-email"></div>
+                            </div>
+                        </div>
+                        <span id="notion-status" class="connection-status status-disconnected">미연결</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">연결 관리</div>
+                <button class="connect-btn" style="width:100%;margin-bottom:8px;" onclick="connectGoogle()">Google Drive 연결</button>
+                <button class="connect-btn" style="width:100%;margin-bottom:8px;" onclick="connectOneDrive()">OneDrive 연결</button>
+                <button class="connect-btn" style="width:100%;" onclick="connectNotion()">Notion 연결</button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">문서 요약</div>
+                <button class="connect-btn" style="width:100%;background:#28a745;" onclick="summarizeDocs()">연동 문서 요약</button>
+            </div>
+        </aside>
+
+        <main class="chat-container">
+            <div class="chat-header">
+                <h2>문서 검색 채팅</h2>
+                <p>연동된 클라우드 드라이브의 문서를 기반으로 질문에 답변합니다.</p>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="message assistant">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        안녕하세요! CloudRAG입니다.<br><br>
+                        왼쪽에서 Google Drive, OneDrive, 또는 Notion을 연동한 후 문서에 대해 질문해주세요.
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="provider-select">
+                    <button class="provider-btn active" data-provider="auto">자동 검색</button>
+                    <button class="provider-btn" data-provider="google" id="btn-google" disabled>Google</button>
+                    <button class="provider-btn" data-provider="onedrive" id="btn-onedrive" disabled>OneDrive</button>
+                    <button class="provider-btn" data-provider="notion" id="btn-notion" disabled>Notion</button>
+                </div>
+                <div class="chat-input-wrapper">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="문서에 대해 질문하세요..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" id="send-btn" onclick="sendMessage()">전송</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 빠른 링크 모달 -->
+    <div class="modal-overlay" id="quick-link-modal">
+        <div class="modal">
+            <h3>빠른 링크 설정</h3>
+            <input type="text" id="quick-link-input" placeholder="폴더/파일 링크를 입력하세요">
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal()">취소</button>
+                <button class="modal-btn primary" onclick="saveQuickLink()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let selectedProvider = 'auto';
+        let connections = {};
+
+        // 초기화
+        async function init() {
+            await loadUser();
+            await loadConnections();
+            setupProviderButtons();
+        }
+
+        // 사용자 정보 로드
+        async function loadUser() {
+            try {
+                const res = await fetch('/me');
+                if (!res.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                currentUser = await res.json();
+                document.getElementById('user-info').textContent =
+                    currentUser.display_name || currentUser.user_name;
+            } catch (e) {
+                window.location.href = '/login';
+            }
+        }
+
+        // 연결 상태 로드
+        async function loadConnections() {
+            try {
+                const res = await fetch('/connections');
+                connections = await res.json();
+
+                // Google
+                if (connections.google) {
+                    document.getElementById('google-status').textContent = '연결됨';
+                    document.getElementById('google-status').className = 'connection-status status-connected';
+                    document.getElementById('google-email').textContent = connections.google_email || '';
+                    document.getElementById('btn-google').disabled = false;
+                }
+
+                // OneDrive
+                if (connections.onedrive) {
+                    document.getElementById('onedrive-status').textContent = '연결됨';
+                    document.getElementById('onedrive-status').className = 'connection-status status-connected';
+                    document.getElementById('onedrive-email').textContent = connections.onedrive_email || '';
+                    document.getElementById('btn-onedrive').disabled = false;
+                }
+
+                // Notion
+                if (connections.notion) {
+                    document.getElementById('notion-status').textContent = '연결됨';
+                    document.getElementById('notion-status').className = 'connection-status status-connected';
+                    document.getElementById('notion-email').textContent = connections.notion_email || '';
+                    document.getElementById('btn-notion').disabled = false;
+                }
+            } catch (e) {
+                console.error('Failed to load connections:', e);
+            }
+        }
+
+        // 프로바이더 버튼 설정
+        function setupProviderButtons() {
+            document.querySelectorAll('.provider-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.disabled) return;
+                    document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedProvider = btn.dataset.provider;
+                });
+            });
+        }
+
+        // 메시지 전송
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            input.value = '';
+
+            // 사용자 메시지 추가
+            addMessage('user', question);
+
+            // 로딩 표시
+            const loadingId = addLoading();
+
+            try {
+                const formData = new FormData();
+                formData.append('user_name', currentUser.user_name);
+                formData.append('question', question);
+                formData.append('max_docs', '10');
+
+                let endpoint = '/chat/auto/ask';
+                if (selectedProvider !== 'auto') {
+                    endpoint = `/chat/${selectedProvider}/ask`;
+                }
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                removeLoading(loadingId);
+
+                if (data.ok) {
+                    let content = data.answer;
+                    if (data.sources && data.sources.length > 0) {
+                        content += `\n\n<div class="message-sources">📚 참고 문서: ${data.sources.map(s => s.title).join(', ')}</div>`;
+                    }
+                    addMessage('assistant', content, true);
+                } else {
+                    addMessage('assistant', data.answer || '답변을 생성할 수 없습니다.');
+                }
+            } catch (e) {
+                removeLoading(loadingId);
+                addMessage('assistant', '오류가 발생했습니다: ' + e.message);
+            }
+
+            sendBtn.disabled = false;
+        }
+
+        // 메시지 추가
+        function addMessage(role, content, isHtml = false) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+
+            const avatar = role === 'user' ? '👤' : 'AI';
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${isHtml ? content : escapeHtml(content).replace(/\n/g, '<br>')}</div>
+            `;
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 로딩 추가
+        function addLoading() {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.id = 'loading-' + Date.now();
+
+            div.innerHTML = `
+                <div class="message-avatar">AI</div>
+                <div class="message-content">
+                    <div class="loading">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div.id;
+        }
+
+        // 로딩 제거
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 키 입력 처리
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 연결 함수들
+        function connectGoogle() {
+            window.location.href = `/auth/google/login?user_name=${currentUser.user_name}`;
+        }
+
+        function connectOneDrive() {
+            window.location.href = `/auth/onedrive/login?user_name=${currentUser.user_name}`;
+        }
+
+        function connectNotion() {
+            window.location.href = `/auth/notion/login?user_name=${currentUser.user_name}`;
+        }
+
+        // 문서 요약
+        async function summarizeDocs() {
+            const providers = [];
+            if (connections.google) providers.push('google');
+            if (connections.onedrive) providers.push('onedrive');
+            if (connections.notion) providers.push('notion');
+
+            if (providers.length === 0) {
+                alert('먼저 클라우드 드라이브를 연동해주세요.');
+                return;
+            }
+
+            addMessage('user', '연동된 문서들을 요약해줘');
+            const loadingId = addLoading();
+
+            try {
+                const res = await fetch('/chat/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_name: currentUser.user_name,
+                        provider: providers[0],
+                        max_docs: 10
+                    })
+                });
+
+                const data = await res.json();
+                removeLoading(loadingId);
+
+                if (data.ok) {
+                    addMessage('assistant', data.summary + `\n\n(${data.readable_count}/${data.doc_count}개 문서 분석)`);
+                } else {
+                    addMessage('assistant', data.summary || '요약을 생성할 수 없습니다.');
+                }
+            } catch (e) {
+                removeLoading(loadingId);
+                addMessage('assistant', '요약 중 오류가 발생했습니다: ' + e.message);
+            }
+        }
+
+        // 로그아웃
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        // 모달 함수
+        function closeModal() {
+            document.getElementById('quick-link-modal').classList.remove('active');
+        }
+
+        // 초기화 실행
+        init();
+    </script>
+</body>
+</html>

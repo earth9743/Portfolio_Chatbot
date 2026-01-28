@@ -1,0 +1,28 @@
+# CloudRAG - Python Dependencies
+
+# Web Framework
+fastapi==0.115.0
+uvicorn==0.30.0
+python-multipart==0.0.9
+starlette==0.38.2
+gunicorn==21.2.0
+
+# HTTP Client
+httpx==0.27.0
+
+# Database
+# SQLite is built-in
+psycopg2-binary==2.9.9  # PostgreSQL (Render 배포용)
+
+# Environment
+python-dotenv==1.0.1
+
+# Google Gemini
+google-generativeai==0.8.3
+
+# PDF Processing (optional but recommended)
+PyMuPDF==1.24.10
+pdfminer.six==20231228
+
+# Pydantic
+pydantic==2.9.2

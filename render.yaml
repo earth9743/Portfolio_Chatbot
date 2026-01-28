@@ -1,0 +1,45 @@
+# render.yaml - Render 배포 설정
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: cloudrag
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cloudrag-db
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false  # Render 대시보드에서 직접 설정
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: ONEDRIVE_CLIENT_ID
+        sync: false
+      - key: ONEDRIVE_CLIENT_SECRET
+        sync: false
+      - key: ONEDRIVE_REDIRECT_URI
+        sync: false
+      - key: NOTION_CLIENT_ID
+        sync: false
+      - key: NOTION_CLIENT_SECRET
+        sync: false
+      - key: NOTION_REDIRECT_URI
+        sync: false
+    autoDeploy: true
+
+databases:
+  - name: cloudrag-db
+    plan: free  # 무료 플랜 (90일 후 만료, 이후 starter 플랜 필요)
+    databaseName: cloudrag
+    user: cloudrag_user
