@@ -7,6 +7,9 @@ import sys
 # backend 폴더를 경로에 추가
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
 
+# Railway/Gunicorn이 찾을 수 있도록 app 객체를 모듈 레벨에서 import
+from app import app
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
